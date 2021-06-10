@@ -1,0 +1,17 @@
+# X12 read an EDI file
+http :8081/edi < 4010-810-3010-850.edi
+
+# Copy to play with output in playground
+http :8081/edi < 4010-810-3010-850.edi | pbcopy
+
+# X12 read and send Functional Ack back
+http :8081/ack-back < 4010-810.edi
+
+# Write functional ack to file
+http :8081/ack-back < 4010-810.edi > 4010-810.ack.edi
+
+# X12 read functional ack
+http :8081/ack-receive < 4010-810.ack.edi
+
+# X12 read and transform to JSON
+http :8081/editojson < 4010-810.edi

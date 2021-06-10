@@ -10,22 +10,22 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1f24d044-6de9-4b65-aa0c-c9ce98d414c1" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<x12:config name="X12_EDI_Config" doc:name="X12 EDI Config" doc:id="672184f6-91e1-4a62-a22d-2cee212a665d" requireUniqueInterchanges="false" lineEnding="CR">
+	<x12:config name="X12_EDI_Config_Read" doc:name="X12 EDI Config" doc:id="672184f6-91e1-4a62-a22d-2cee212a665d" requireUniqueInterchanges="false" lineEnding="CR" acknowledgmentSchemaPath="/x12/004010/997.esl" interchangeIdQualifierSelf="ZZ" interchangeIdSelf="RECEIVERISA">
+	</x12:config>
+	<x12:config name="X12_EDI_Config-Write" doc:name="X12 EDI Config" doc:id="3568b927-80c4-4bd2-bce1-397e9692fe0d">
 		<x12:schemas >
 			<x12:schema value="/x12/004010/810.esl" />
 			<x12:schema value="/x12/004010/997.esl" />
-			<x12:schema value="/x12/003010/850.esl" />
-			<x12:schema value="/x12/003010/997.esl" />
 		</x12:schemas>
 	</x12:config>
 	<flow name="flow-1-plain-transform" doc:id="c32ef432-2f34-4756-854a-9667946233c0" >
 		<http:listener doc:name="Listener" doc:id="16ff44b8-4665-4899-96a3-48ea74d0382a" config-ref="HTTP_Listener_config" path="/edi" allowedMethods="POST"/>
-		<x12:read doc:name="Read" doc:id="01ffafb3-b02b-41ae-a717-90de8a5ccbbf" config-ref="X12_EDI_Config"/>
+		<x12:read doc:name="Read" doc:id="01ffafb3-b02b-41ae-a717-90de8a5ccbbf" config-ref="X12_EDI_Config_Read"/>
 		<set-payload value="#[output application/json --- payload]" doc:name="Set Payload" doc:id="220ed3fb-9d61-4004-8597-09f6d073df3e" />
 	</flow>
 	<flow name="flow-2-fa-ack-back" doc:id="c4394385-bb88-4fd8-a84a-bc996fb1fff0" >
 		<http:listener doc:name="Listener" doc:id="8916ba90-9da2-4b2e-aa61-ef10ec5e7b28" config-ref="HTTP_Listener_config" path="/ack-back"/>
-		<x12:read doc:name="Read" doc:id="f1494f10-91df-44cc-9824-ace24a9e9d82" config-ref="X12_EDI_Config" />
+		<x12:read doc:name="Read" doc:id="f1494f10-91df-44cc-9824-ace24a9e9d82" config-ref="X12_EDI_Config_Read" />
 		<ee:transform doc:name="Transform X12 FA Acks" doc:id="8fa8636c-a3a3-4346-9b27-545b3b5eccdd" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -34,7 +34,7 @@ output application/java
 {
     TransactionSets: {        
         (payload.FunctionalAcksGenerated map {
-            ($.Group.GS08): {
+            ("v" ++ $.Group.GS08): {
                 ($.Id): [ $ ]
             }
         })
@@ -42,16 +42,16 @@ output application/java
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<x12:write doc:name="Write" doc:id="f30a47a3-f541-42c4-b03b-94ec4512180e" config-ref="X12_EDI_Config"/>
+		<x12:write doc:name="Write" doc:id="f30a47a3-f541-42c4-b03b-94ec4512180e" config-ref="X12_EDI_Config-Write"/>
 	</flow>
 	<flow name="flow-3-fa-receive" doc:id="05eee614-fb69-48e0-ba81-4c55e39e5ac0" >
 		<http:listener doc:name="Listener" doc:id="047ef27b-cc9d-410e-a04b-ebe3d924aa4b" config-ref="HTTP_Listener_config" path="/ack-receive"/>
-		<x12:read doc:name="Read" doc:id="07233aa3-642f-4cdf-ae55-f5efcc06a61d" config-ref="X12_EDI_Config"/>
+		<x12:read doc:name="Read" doc:id="07233aa3-642f-4cdf-ae55-f5efcc06a61d" config-ref="X12_EDI_Config_Read"/>
 		<set-payload value="#[output application/json --- payload]" doc:name="Set Payload" doc:id="b557f254-c63a-485b-a878-1596b528cdd9" />
 	</flow>
 	<flow name="flow-4-810-invoice" doc:id="822cd5e5-b108-493c-919f-4e8e13a8ff14" >
 		<http:listener doc:name="Listener" doc:id="de04a438-64e3-4cb0-8cbd-857f37fec0e5" config-ref="HTTP_Listener_config" path="/editojson" allowedMethods="POST"/>
-		<x12:read doc:name="Read" doc:id="b2384827-c157-405a-afef-ab8a529d4aae" config-ref="X12_EDI_Config"/>
+		<x12:read doc:name="Read" doc:id="b2384827-c157-405a-afef-ab8a529d4aae" config-ref="X12_EDI_Config_Read"/>
 		<ee:transform doc:name="Transform Message" doc:id="fe225c05-fbd7-4937-b2ff-17c310931318" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
